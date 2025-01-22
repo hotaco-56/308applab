@@ -1,5 +1,6 @@
 // backend.js
-import express from "express";
+import express, { response } from "express";
+import cors from "cors"
 
 const app = express();
 const port = 8000;
@@ -40,14 +41,30 @@ const findUserByName = (name) => {
   );
 };
 
+const genId = () => {
+  const random_id = Math.trunc(Math.random()*1000);
+  return random_id;
+};
+
 const findUserById = (id) =>
 	users["users_list"].find((user) => user["id"] === id);
 
 const addUser = (user) => {
+  user.id = genId().toString();
 	users["users_list"].push(user);
 	return user;
 };
 
+const deleteUserById = (id) => {
+  const user = findUserById(id);
+  if (user !== undefined) {
+    let index = users["users_list"].indexOf(user);
+    users["users_list"].splice(index, 1);
+  }
+  return user;
+};
+
+app.use(cors());
 app.use(express.json());
 
 app.get("/", (req, res) => {
@@ -70,11 +87,12 @@ app.get("/users", (req, res) => {
 });
 
 app.get("/users/:id", (req, res) => {
-	const id = req.params["id"];
+	const id = req.body["id"];
 	let result = findUserById(id);
 	if (result === undefined) {
 		res.status(404).send("Resource not found.");
-	} else {
+	} 
+  else {
 		res.send(result);
 	}
 });
@@ -82,11 +100,24 @@ app.get("/users/:id", (req, res) => {
 app.post("/users", (req,res) => {
 	const userToAdd = req.body;
 	addUser(userToAdd);
-	res.send();
+  res.status(201).send(req.body);
 });
 
-app.listen(port, () => {
+app.delete("/users/:id", (req, res) => {
+  const id = req.body["id"];
+  console.log(id);
+  let result = deleteUserById(id);
+  if (result === undefined) {
+    res.status(404).send("Resource not found. idiot");
+  }
+  else {
+    res.status(204).send(result);
+  }
+});
+
+const server = app.listen(port, () => {
   console.log(
     `Example app listening at http://localhost:${port}`
   );
 });
+
